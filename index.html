@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Medical Consultation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2fe; /* Light blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .step-section {
+            display: none; /* Hidden by default */
+        }
+        .step-section.active {
+            display: block; /* Shown when active */
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #1e3a8a; /* Darker blue for labels */
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-group textarea,
+        .form-group select,
+        .form-group input[type="date"],
+        .form-group input[type="time"],
+        .form-group input[type="text"] { /* Added text input for prescription */
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #93c5fd; /* Light blue border */
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #1f2937; /* Dark gray for text */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+        .form-group textarea:focus,
+        .form-group select:focus,
+        .form-group input[type="date"]:focus,
+        .form-group input[type="time"]:focus,
+        .form-group input[type="text"]:focus {
+            border-color: #2563eb; /* Blue-600 */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25); /* Blue-600 with opacity */
+            outline: none;
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            text-align: center;
+            display: inline-block;
+        }
+        .btn-primary {
+            background-color: #2563eb; /* Blue-600 */
+            color: #ffffff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #1e40af; /* Blue-700 */
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+        .btn-secondary {
+            background-color: #bfdbfe; /* Blue-200 */
+            color: #1e3a8a; /* Darker blue for secondary text */
+            border: none;
+        }
+        .btn-secondary:hover {
+            background-color: #93c5fd; /* Blue-300 */
+            box-shadow: 0 4px 10px rgba(100, 116, 139, 0.1);
+        }
+        .doctor-card {
+            background-color: #f0f9ff; /* Very light blue */
+            border: 1px solid #bfdbfe; /* Light blue border */
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .doctor-card:hover {
+            background-color: #e0f2fe; /* Lighter blue on hover */
+            border-color: #60a5fa; /* Medium blue border on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1);
+        }
+        .doctor-card.selected {
+            border-color: #2563eb; /* Blue-600 */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+            background-color: #dbeafe; /* Blue-100 */
+        }
+        .doctor-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #60a5fa; /* Medium blue for avatar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            border-radius: 15px;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #2563eb; /* Blue-600 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            display: none; /* Hidden by default */
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .message-box h3 {
+            margin-top: 0;
+            color: #1e3a8a; /* Darker blue for message box title */
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .message-box p {
+            color: #1f2937; /* Dark gray for message box content */
+            margin-bottom: 20px;
+        }
+        .message-box button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .message-box button:hover {
+            background-color: #1e40af;
+        }
+        /* Styles for simulated video call */
+        .video-call-simulation {
+            background-color: #1f2937; /* Dark blue-gray for call background */
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        .video-call-simulation .timer {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #60a5fa; /* Medium blue for active call timer */
+        }
+        /* Adjusted colors for alert/info boxes */
+        .bg-red-50 { background-color: #e0f2fe; /* Light blue */ }
+        .border-red-200 { border-color: #93c5fd; /* Light blue */ }
+        .text-red-800 { color: #1e3a8a; /* Darker blue */ }
+
+        .bg-blue-50 { background-color: #e0f2fe; /* Light blue */ }
+        .border-blue-200 { border-color: #93c5fd; /* Light blue */ }
+        .text-blue-800 { color: #1e3a8a; /* Darker blue */ }
+
+        .bg-green-50 { background-color: #e0f2fe; /* Light blue */ }
+        .border-green-200 { border-color: #93c5fd; /* Light blue */ }
+        .text-green-800 { color: #1e3a8a; /* Darker blue */ }
+
+        /* General text colors */
+        .text-gray-800 { color: #1e3a8a; /* Darker blue */ }
+        .text-gray-700 { color: #1e3a8a; /* Darker blue */ }
+        .text-gray-600 { color: #3b82f6; /* Medium blue */ }
+        .text-gray-300 { color: #93c5fd; /* Light blue */ }
+    </style>
+</head>
+<body>
+    <div class="container relative">
+        <!-- Logo and text container -->
+        <div class="absolute top-4 left-4 flex items-center gap-2">
+            <img src="ChatGPT Image Jul 25, 2025, 02_37_04 AM.png" alt="Company Logo" class="w-20 h-20 rounded-lg shadow-md">
+            <span class="text-lg font-bold text-blue-800" style="font-size: 12px;">HEALTHCURA.AI</span>
+        </div>
+
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6 mt-12">Online Medical Consultation</h1>
+
+        <!-- Step 1: Symptoms Description -->
+        <div id="step1" class="step-section active">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 1: Describe Your Symptoms</h2>
+            <p class="text-gray-600 mb-6">Please provide a detailed description of your symptoms. The more information you provide, the better we can assist you.</p>
+            <div class="form-group mb-6">
+                <label for="symptoms">Symptoms:</label>
+                <textarea id="symptoms" rows="8" placeholder="e.g., 'I have had a persistent cough for 3 days, accompanied by a sore throat and mild fever (around 100°F). I also feel fatigued and have body aches.'"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button id="next1" class="btn btn-primary">Next Step</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Referrals Based on Symptoms -->
+        <div id="step2" class="step-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 2: Recommended Specialists & Doctors</h2>
+            <p class="text-gray-600 mb-6">Based on your symptoms, we provide the following insights and recommendations. Please select a doctor to proceed with booking an appointment.</p>
+
+            <!-- New: Possible Sicknesses -->
+            <div id="possibleSicknessesResult" class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6 hidden">
+                <h3 class="font-semibold text-lg mb-2">Possible Conditions:</h3>
+                <p id="sicknessesList" class="mb-4"></p>
+                <p class="text-sm text-red-700">Disclaimer: This is an AI-generated suggestion and not a diagnosis. Consult a medical professional for accurate assessment.</p>
+            </div>
+
+            <div id="referralResult" class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mb-6 hidden">
+                <h3 class="font-semibold text-lg mb-2">Our Specialty Recommendation:</h3>
+                <p id="recommendedSpecialty" class="mb-4"></p>
+                <p class="text-sm text-blue-700">Please note: This is an AI-generated recommendation and not a substitute for professional medical advice.</p>
+            </div>
+
+            <div class="form-group mb-6">
+                <label for="doctorSelect">Available Doctors:</label>
+                <div id="doctorList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Doctors will be dynamically loaded here -->
+                </div>
+                <input type="hidden" id="selectedDoctorId">
+                <input type="hidden" id="selectedConsultationType">
+            </div>
+
+            <div class="flex justify-between">
+                <button id="prev2" class="btn btn-secondary">Previous</button>
+                <button id="next2" class="btn btn-primary">Next Step</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Book Appointment & Initial Confirmation -->
+        <div id="step3" class="step-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 3: Book Appointment</h2>
+            <p class="text-gray-600 mb-6">You are about to book an appointment with <span id="selectedDoctorName" class="font-semibold"></span>. Please select your preferred date and time.</p>
+
+            <div class="form-group mb-4">
+                <label for="appointmentDate">Appointment Date:</label>
+                <input type="date" id="appointmentDate" min="">
+            </div>
+            <div class="form-group mb-6">
+                <label for="appointmentTime">Appointment Time:</label>
+                <input type="time" id="appointmentTime">
+            </div>
+
+            <div id="bookingConfirmation" class="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-6 hidden">
+                <h3 class="font-semibold text-lg mb-2">Appointment Request Sent!</h3>
+                <p id="bookingConfirmationDetails"></p>
+                <p class="mt-2 text-sm text-green-700">Awaiting doctor's approval. You will be notified shortly.</p>
+            </div>
+
+            <div class="flex justify-between">
+                <button id="prev3" class="btn btn-secondary">Previous</button>
+                <button id="submitAppointment" class="btn btn-primary">Book Appointment</button>
+            </div>
+        </div>
+
+        <!-- New Step 4: Virtual Call / Consultation (Online Only) -->
+        <div id="step4" class="step-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 4: Virtual Consultation</h2>
+            <p class="text-gray-600 mb-6">Your online consultation with <span id="callDoctorName" class="font-semibold"></span> is ready.</p>
+            <div id="virtualCallArea" class="video-call-simulation hidden">
+                <p class="text-xl font-semibold">Connecting to BigBlueButton...</p>
+                <p class="text-lg">Simulating 45-minute call.</p>
+                <div class="timer" id="callTimer">00:00</div>
+                <p class="text-sm text-gray-300">This is a simulation. In a real application, you would see the video call interface here.</p>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button id="joinCallButton" class="btn btn-primary">Join Virtual Call</button>
+            </div>
+        </div>
+
+        <!-- New Step 5: Prescription & Payment -->
+        <div id="step5" class="step-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 5: Prescription & Payment</h2>
+            <p class="text-gray-600 mb-6">Your consultation with <span id="prescriptionDoctorName" class="font-semibold"></span> is complete. Please review the prescription and proceed with payment.</p>
+
+            <div class="form-group mb-6">
+                <label for="prescriptionText">Prescription (Simulated):</label>
+                <textarea id="prescriptionText" rows="6" placeholder="e.g., 'Amoxicillin 500mg, take one capsule every 8 hours for 7 days. Rest and drink plenty of fluids.'"></textarea>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mb-6">
+                <h3 class="font-semibold text-lg mb-2">Payment Information (Simulated)</h3>
+                <p>Total Amount: <strong>R250.00</strong></p>
+                <p class="text-sm text-blue-700">This is a simulated payment gateway. No real transaction will occur.</p>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="proceedToPayment" class="btn btn-primary">Proceed to Payment</button>
+            </div>
+        </div>
+
+        <!-- New Step 6: Payment Confirmation & Delivery -->
+        <div id="step6" class="step-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Step 6: Payment Confirmation</h2>
+            <div id="paymentConfirmationMessage" class="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-6">
+                <h3 class="font-semibold text-lg mb-2">Payment Successful!</h3>
+                <p id="paymentDeliveryDetails"></p>
+                <p class="mt-2 text-sm text-green-700">Thank you for your payment. Your medicine will be dispatched shortly.</p>
+            </div>
+            <div class="flex justify-center">
+                <button id="finishButton" class="btn btn-primary">Finish</button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Custom Message Box -->
+        <div id="messageBox" class="message-box">
+            <h3 id="messageBoxTitle"></h3>
+            <p id="messageBoxContent"></p>
+            <button id="messageBoxClose">OK</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Function to show a custom message box
+        function showMessageBox(title, message) {
+            document.getElementById('messageBoxTitle').innerText = title;
+            document.getElementById('messageBoxContent').innerText = message;
+            document.getElementById('messageBox').style.display = 'block';
+        }
+
+        // Function to hide the custom message box
+        document.getElementById('messageBoxClose').addEventListener('click', () => {
+            document.getElementById('messageBox').style.display = 'none';
+        });
+
+        const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6'];
+        let currentStep = 0;
+
+        const symptomsTextarea = document.getElementById('symptoms');
+        const possibleSicknessesResultDiv = document.getElementById('possibleSicknessesResult');
+        const sicknessesListParagraph = document.getElementById('sicknessesList');
+        const referralResultDiv = document.getElementById('referralResult');
+        const recommendedSpecialty = document.getElementById('recommendedSpecialty');
+        const doctorListDiv = document.getElementById('doctorList');
+        const selectedDoctorIdInput = document.getElementById('selectedDoctorId');
+        const selectedDoctorNameSpan = document.getElementById('selectedDoctorName');
+        const selectedConsultationTypeInput = document.getElementById('selectedConsultationType');
+        const appointmentDateInput = document.getElementById('appointmentDate');
+        const appointmentTimeInput = document.getElementById('appointmentTime');
+        const bookingConfirmationDiv = document.getElementById('bookingConfirmation');
+        const bookingConfirmationDetails = document.getElementById('bookingConfirmationDetails');
+        const prescriptionDeliveryInfo = document.getElementById('prescriptionDeliveryInfo');
+        const callDoctorNameSpan = document.getElementById('callDoctorName');
+        const virtualCallArea = document.getElementById('virtualCallArea');
+        const joinCallButton = document.getElementById('joinCallButton');
+        const callTimer = document.getElementById('callTimer');
+        const prescriptionDoctorNameSpan = document.getElementById('prescriptionDoctorName');
+        const prescriptionTextarea = document.getElementById('prescriptionText');
+        const paymentConfirmationMessageDiv = document.getElementById('paymentConfirmationMessage');
+        const paymentDeliveryDetails = document.getElementById('paymentDeliveryDetails');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Dummy doctor data (in a real app, this would come from a database)
+        const doctors = [
+            { id: 'doc1', name: 'Dr. SP Kumalo', specialty: 'General Practitioner', avatar: 'EW', address: '123 S Section, Botshabelo' },
+            { id: 'doc2', name: 'Dr. EN Mhlakaza', specialty: 'Pediatrician', avatar: 'JD', address: '456 Oak Ave, bloemfontein' },
+            { id: 'doc3', name: 'Dr. KE Siyale ', specialty: 'Dermatologist', avatar: 'SL', address: '789 Pine Ln, bloemfontein' },
+            { id: 'doc4', name: 'Dr. MB Tau', specialty: 'Cardiologist', avatar: 'MB', address: '101 Elm Rd, bloemfontein' },
+            { id: 'doc5', name: 'Dr. W Leshoro', specialty: 'Neurologist', avatar: 'JG', address: '202 Birch Blvd, bloemfontein' },
+            { id: 'doc6', name: 'Dr. TA Lecholo', specialty: 'Orthopedic Surgeon', avatar: 'RK', address: '303 Cedar Ct, bloemfontein' },
+        ];
+
+        // Function to update the step visibility
+        function updateStepVisibility() {
+            steps.forEach((stepId, index) => {
+                const stepElement = document.getElementById(stepId);
+                if (index === currentStep) {
+                    stepElement.classList.add('active');
+                } else {
+                    stepElement.classList.remove('active');
+                }
+            });
+        }
+
+        // Function to show loading overlay
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        // Function to hide loading overlay
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Event listener for Next button on Step 1
+        document.getElementById('next1').addEventListener('click', async () => {
+            const symptoms = symptomsTextarea.value.trim();
+            if (symptoms === '') {
+                showMessageBox('Input Required', 'Please describe your symptoms before proceeding.');
+                return;
+            }
+
+            showLoading(); // Show loading indicator
+
+            try {
+                // API Call 1: Get possible sicknesses
+                let sicknessesChatHistory = [];
+                sicknessesChatHistory.push({ role: "user", parts: [{ text: `Based on the following symptoms, list 3-5 possible sicknesses or conditions the patient might be experiencing. Provide only a comma-separated list of conditions (e.g., "Common Cold, Flu, Allergies"). Symptoms: ${symptoms}` }] });
+                const sicknessesPayload = { contents: sicknessesChatHistory };
+                const apiKey = ""; // API key is handled by the environment
+                const sicknessesApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const sicknessesResponse = await fetch(sicknessesApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sicknessesPayload)
+                });
+
+                const sicknessesResult = await sicknessesResponse.json();
+                let possibleSicknesses = 'Unable to determine possible conditions.';
+                if (sicknessesResult.candidates && sicknessesResult.candidates.length > 0 &&
+                    sicknessesResult.candidates[0].content && sicknessesResult.candidates[0].content.parts &&
+                    sicknessesResult.candidates[0].content.parts.length > 0) {
+                    possibleSicknesses = sicknessesResult.candidates[0].content.parts[0].text.trim();
+                }
+                sicknessesListParagraph.innerText = possibleSicknesses;
+                possibleSicknessesResultDiv.classList.remove('hidden'); // Show the sicknesses div
+
+
+                // API Call 2: Get recommended specialty
+                let specialtyChatHistory = [];
+                specialtyChatHistory.push({ role: "user", parts: [{ text: `Based on the following symptoms, suggest a general medical specialty that would be most appropriate for consultation. Respond only with the specialty name (e.g., "General Practitioner", "Dermatologist", "Cardiologist"). Symptoms: ${symptoms}` }] });
+                const specialtyPayload = { contents: specialtyChatHistory };
+                const specialtyApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const specialtyResponse = await fetch(specialtyApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(specialtyPayload)
+                });
+
+                const specialtyResult = await specialtyResponse.json();
+                let specialty = 'General Practitioner'; // Default if API fails or returns unexpected
+                if (specialtyResult.candidates && specialtyResult.candidates.length > 0 &&
+                    specialtyResult.candidates[0].content && specialtyResult.candidates[0].content.parts &&
+                    specialtyResult.candidates[0].content.parts.length > 0) {
+                    specialty = specialtyResult.candidates[0].content.parts[0].text.trim();
+                }
+
+                recommendedSpecialty.innerText = `You might need to consult a ${specialty}.`;
+                referralResultDiv.classList.remove('hidden');
+
+                // Filter doctors based on the suggested specialty (simple matching for demo)
+                const filteredDoctors = doctors.filter(doc => doc.specialty.includes(specialty) || specialty.includes(doc.specialty) || specialty === 'General Practitioner');
+
+                // If no specific doctors match, show all general practitioners or all doctors
+                const doctorsToShow = filteredDoctors.length > 0 ? filteredDoctors : doctors.filter(doc => doc.specialty === 'General Practitioner').length > 0 ? doctors.filter(doc => doc.specialty === 'General Practitioner') : doctors;
+
+
+                // Clear previous doctor list
+                doctorListDiv.innerHTML = '';
+                let selectedDoctorCard = null;
+
+                doctorsToShow.forEach(doc => {
+                    const doctorCard = document.createElement('div');
+                    doctorCard.classList.add('doctor-card', 'flex', 'items-center', 'gap-4', 'p-4', 'rounded-lg', 'shadow-sm', 'cursor-pointer');
+                    doctorCard.dataset.id = doc.id;
+                    doctorCard.dataset.name = doc.name;
+
+                    doctorCard.innerHTML = `
+                        <div class="doctor-avatar">${doc.avatar}</div>
+                        <div class="flex-grow">
+                            <p class="font-semibold text-gray-800 text-lg">${doc.name}</p>
+                            <p class="text-gray-600 text-sm mb-2">${doc.specialty}</p>
+                            <div class="flex gap-2">
+                                <button class="btn btn-secondary text-sm px-3 py-1 online-consultation" data-doctor-id="${doc.id}" data-doctor-name="${doc.name}">Online</button>
+                                <button class="btn btn-secondary text-sm px-3 py-1 face-to-face-consultation" data-doctor-id="${doc.id}" data-doctor-name="${doc.name}">Face to Face</button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add event listener to the doctor card itself for general selection
+                    doctorCard.addEventListener('click', () => {
+                        if (selectedDoctorCard) {
+                            selectedDoctorCard.classList.remove('selected');
+                        }
+                        doctorCard.classList.add('selected');
+                        selectedDoctorCard = doctorCard;
+                        selectedDoctorIdInput.value = doc.id;
+                        selectedDoctorNameSpan.innerText = doc.name;
+                        // Clear consultation type when a new doctor is selected by clicking the card
+                        selectedConsultationTypeInput.value = '';
+                    });
+
+                    // Add event listeners to the new buttons
+                    doctorCard.querySelector('.online-consultation').addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent the parent doctor-card click event
+                        if (selectedDoctorCard) {
+                            selectedDoctorCard.classList.remove('selected');
+                        }
+                        doctorCard.classList.add('selected');
+                        selectedDoctorCard = doctorCard;
+                        selectedDoctorIdInput.value = doc.id;
+                        selectedDoctorNameSpan.innerText = doc.name;
+                        selectedConsultationTypeInput.value = 'online'; // Set consultation type
+                        showMessageBox('Online Consultation', `You have selected an online consultation with ${doc.name}. This would typically lead to a new page for virtual appointment setup.`);
+                    });
+
+                    doctorCard.querySelector('.face-to-face-consultation').addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent the parent doctor-card click event
+                        if (selectedDoctorCard) {
+                            selectedDoctorCard.classList.remove('selected');
+                        }
+                        doctorCard.classList.add('selected');
+                        selectedDoctorCard = doctorCard;
+                        selectedDoctorIdInput.value = doc.id;
+                        selectedDoctorNameSpan.innerText = doc.name;
+                        selectedConsultationTypeInput.value = 'face-to-face'; // Set consultation type
+                        showMessageBox('Face-to-Face Consultation', `You have selected a face-to-face consultation with ${doc.name}. This would typically lead to a new page for clinic location and in-person appointment setup.`);
+                    });
+
+                    doctorListDiv.appendChild(doctorCard);
+                });
+
+                currentStep = 1;
+                updateStepVisibility();
+
+            } catch (error) {
+                console.error('Error fetching AI insights:', error);
+                showMessageBox('Error', 'Could not get insights. Please try again later.');
+            } finally {
+                hideLoading(); // Hide loading indicator
+            }
+        });
+
+        // Event listener for Previous button on Step 2
+        document.getElementById('prev2').addEventListener('click', () => {
+            currentStep = 0;
+            updateStepVisibility();
+        });
+
+        // Event listener for Next button on Step 2
+        document.getElementById('next2').addEventListener('click', () => {
+            if (selectedDoctorIdInput.value === '') {
+                showMessageBox('Selection Required', 'Please select a doctor before proceeding.');
+                return;
+            }
+            // Ensure a consultation type is selected
+            if (selectedConsultationTypeInput.value === '') {
+                showMessageBox('Consultation Type Required', 'Please select either "Online" or "Face to Face" consultation for the selected doctor.');
+                return;
+            }
+
+            // Set minimum date for appointment to today
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            appointmentDateInput.min = `${year}-${month}-${day}`;
+
+            currentStep = 2;
+            updateStepVisibility();
+        });
+
+        // Event listener for Previous button on Step 3
+        document.getElementById('prev3').addEventListener('click', () => {
+            currentStep = 1;
+            updateStepVisibility();
+        });
+
+        // Event listener for Submit button on Step 3 (Book Appointment)
+        document.getElementById('submitAppointment').addEventListener('click', () => {
+            const selectedDoctorId = selectedDoctorIdInput.value;
+            const selectedDoctor = doctors.find(doc => doc.id === selectedDoctorId);
+            const appointmentDate = appointmentDateInput.value;
+            const appointmentTime = appointmentTimeInput.value;
+            const consultationType = selectedConsultationTypeInput.value;
+
+            if (!selectedDoctor || appointmentDate === '' || appointmentTime === '' || consultationType === '') {
+                showMessageBox('Input Required', 'Please ensure a doctor, consultation type, date, and time are selected for your appointment.');
+                return;
+            }
+
+            let detailsHtml = `
+                <p><strong>Doctor:</strong> ${selectedDoctor.name}</p>
+                <p><strong>Type:</strong> ${consultationType === 'online' ? 'Online Consultation' : 'Face to Face Consultation'}</p>
+                <p><strong>Date:</strong> ${appointmentDate}</p>
+                <p><strong>Time:</strong> ${appointmentTime}</p>
+            `;
+
+            if (consultationType === 'face-to-face') {
+                detailsHtml += `<p><strong>Address:</strong> ${selectedDoctor.address}</p>`;
+                bookingConfirmationDetails.innerHTML = detailsHtml;
+                bookingConfirmationDiv.classList.remove('hidden');
+                showMessageBox('Appointment Booked!', 'Your appointment has been booked. You will receive an email shortly.');
+                // For face-to-face, directly proceed to prescription/payment
+                setTimeout(() => {
+                    currentStep = 4; // Skip step4 (virtual call)
+                    updateStepVisibility();
+                    prescriptionDoctorNameSpan.innerText = selectedDoctor.name; // Set doctor name for prescription
+                }, 1000); // Small delay for confirmation message to be seen
+            } else { // Online consultation
+                bookingConfirmationDetails.innerHTML = detailsHtml;
+                bookingConfirmationDiv.classList.remove('hidden');
+                showMessageBox('Appointment Request Sent!', 'Your online appointment request has been sent. Awaiting doctor approval. You will be notified shortly.');
+                // Simulate doctor approval for online consultation
+                setTimeout(() => {
+                    showMessageBox('Appointment Approved!', 'Your online consultation has been approved! You can now join the virtual call.');
+                    currentStep = 3; // Move to virtual call step
+                    updateStepVisibility();
+                    callDoctorNameSpan.innerText = selectedDoctor.name; // Set doctor name for call
+                }, 3000); // Simulate 3 seconds for doctor approval
+            }
+
+            // Disable form elements after submission
+            document.getElementById('symptoms').disabled = true;
+            document.querySelectorAll('.doctor-card').forEach(card => card.style.pointerEvents = 'none');
+            appointmentDateInput.disabled = true;
+            appointmentTimeInput.disabled = true;
+            document.getElementById('next1').disabled = true;
+            document.getElementById('next2').disabled = true;
+            document.getElementById('submitAppointment').disabled = true;
+            document.getElementById('prev2').disabled = true;
+            document.getElementById('prev3').disabled = true;
+        });
+
+        // Event listener for Join Call button (Step 4)
+        joinCallButton.addEventListener('click', () => {
+            virtualCallArea.classList.remove('hidden');
+            joinCallButton.classList.add('hidden'); // Hide join button
+
+            let seconds = 0;
+            const simulatedCallDurationSeconds = 10; // Simulate 45 minutes as 10 seconds for demo
+
+            const timerInterval = setInterval(() => {
+                seconds++;
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                callTimer.innerText = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+
+                if (seconds >= simulatedCallDurationSeconds) {
+                    clearInterval(timerInterval);
+                    virtualCallArea.innerHTML = '<p class="text-xl font-semibold text-white">Call Ended.</p><p class="text-sm text-gray-300">Thank you for your consultation.</p>';
+                    setTimeout(() => {
+                        currentStep = 4; // Move to prescription/payment step
+                        updateStepVisibility();
+                        const selectedDoctorId = selectedDoctorIdInput.value;
+                        const selectedDoctor = doctors.find(doc => doc.id === selectedDoctorId);
+                        prescriptionDoctorNameSpan.innerText = selectedDoctor.name; // Set doctor name for prescription
+                    }, 1500); // Small delay before moving to next step
+                }
+            }, 1000); // Update every second
+        });
+
+        // Event listener for Proceed to Payment button (Step 5)
+        document.getElementById('proceedToPayment').addEventListener('click', () => {
+            showLoading();
+            // Simulate payment processing
+            setTimeout(() => {
+                hideLoading();
+                const selectedDoctorId = selectedDoctorIdInput.value;
+                const selectedDoctor = doctors.find(doc => doc.id === selectedDoctorId);
+                const consultationType = selectedConsultationTypeInput.value;
+
+                let deliveryMessage = '';
+                if (consultationType === 'online') {
+                    // Simulate distance for online consultations
+                    const simulatedDistanceKm = Math.random() * 20; // Random distance between 0 and 20 km
+                    if (simulatedDistanceKm <= 10) {
+                        deliveryMessage = 'Your medicine will be delivered in the next 30 minutes.';
+                    } else {
+                        deliveryMessage = 'Your medicine will be delivered within an hour.';
+                    }
+                } else {
+                    deliveryMessage = 'Please collect your prescription from the clinic at your convenience.';
+                }
+
+                paymentDeliveryDetails.innerHTML = deliveryMessage;
+                currentStep = 5; // Move to payment confirmation step
+                updateStepVisibility();
+                showMessageBox('Payment Confirmed!', 'Your payment has been successfully processed.');
+            }, 2000); // Simulate 2 seconds for payment processing
+        });
+
+        // Event listener for Finish button (Step 6)
+        document.getElementById('finishButton').addEventListener('click', () => {
+            showMessageBox('Thank You!', 'Thank you for using our service!');
+            // Optionally, reset the form or redirect to home
+            setTimeout(() => {
+                location.reload(); // Reloads the page to restart the process
+            }, 1500);
+        });
+
+
+        // Initial update to show the first step
+        updateStepVisibility();
+    </script>
+</body>
+</html>
